@@ -3,16 +3,15 @@ import { GoogleAuth } from 'google-auth-library';
 
 export default async function handler(req, res) {
   // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*'); // Allow requests from any origin
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS'); // Allow specific methods
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // Allow headers
+  res.setHeader('Access-Control-Allow-Origin', '*'); // Allow requests from any origin (replace '*' with your frontend domain for tighter security)
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS'); // Allow specific HTTP methods
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // Allow specific headers
 
-  // If it's a preflight (OPTIONS) request, just return a 200 response
+  // Handle preflight OPTIONS request
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    return res.status(200).end(); // Respond successfully to preflight request
   }
 
-  // Proceed with your regular POST handling
   if (req.method !== 'POST') return res.status(405).json({ error: 'Solo POST' });
 
   const inicio = Date.now();
