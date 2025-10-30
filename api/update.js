@@ -7,7 +7,7 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-  console.log('Attemping to start the API request')
+  // Handle preflight OPTIONS request
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -20,10 +20,15 @@ module.exports = async function handler(req, res) {
   try {
     const doc = new GoogleSpreadsheet(process.env.SHEET_ID);
 
+    // Ensure the private key is correctly formatted
+    const private_key = `-----BEGIN PRIVATE KEY-----
+    ${process.env.PRIVATE_KEY}
+    -----END PRIVATE KEY-----`;
+
     const auth = new GoogleAuth({
       credentials: {
         client_email: process.env.CLIENT_EMAIL,
-        private_key: process.env.PRIVATE_KEY.replace(/\\n/g, '\n')
+        private_key: private_key.replace(/\\n/g, '\n')
       },
       scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
@@ -32,10 +37,10 @@ module.exports = async function handler(req, res) {
     doc.useOAuth2Client(authClient);
 
     await doc.loadInfo();
-    const sheet = doc.sheetsByIndex[0];
+    const sheet = doc.sheetsByIndex[0];  // "main" sheet
 
     const range = sheet.getRange(rango);
-    const cells = range._cellCells || [];
+    const cells = range._cellCells || [];  // Reuse if exists
     await sheet.updateCells(cells.map((cell, i) => ({
       ...cell,
       value: valores.flat()[i] || ''
