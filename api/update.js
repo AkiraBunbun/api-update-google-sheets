@@ -1,5 +1,3 @@
-api/update.js:
-```javascript
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 
 export default async function(req, res) {
