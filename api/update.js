@@ -1,17 +1,7 @@
 import { GoogleSpreadsheet } from 'google-spreadsheet';
+import { GoogleAuth } from 'google-auth-library';
 
 export default async function handler(req, res) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*'); // Allow requests from any origin
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS'); // Allow specific methods
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // Allow headers
-
-  // If it's a preflight (OPTIONS) request, just return a 200 response
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  // Proceed with your regular POST handling
   if (req.method !== 'POST') return res.status(405).json({ error: 'Solo POST' });
 
   const inicio = Date.now();
@@ -19,10 +9,20 @@ export default async function handler(req, res) {
 
   try {
     const doc = new GoogleSpreadsheet(process.env.SHEET_ID);
-    await doc.useServiceAccountAuth({
-      client_email: process.env.CLIENT_EMAIL,
-      private_key: process.env.PRIVATE_KEY.replace(/\\n/g, '\n')  // Handle line breaks in private key
+
+    // Create a GoogleAuth instance for service account authentication
+    const auth = new GoogleAuth({
+      credentials: {
+        client_email: process.env.CLIENT_EMAIL,
+        private_key: process.env.PRIVATE_KEY.replace(/\\n/g, '\n')
+      },
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
+
+    // Use the GoogleAuth client to authenticate
+    const authClient = await auth.getClient();
+    doc.useOAuth2Client(authClient);  // Use the OAuth2 client for auth
+
     await doc.loadInfo();
     const sheet = doc.sheetsByIndex[0];  // "main" sheet
 
