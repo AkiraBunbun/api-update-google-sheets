@@ -1,4 +1,4 @@
 {
-  "dependencies": {"google-spreadsheet": "^5.0.2"}
+  "dependencies": {"google-spreadsheet": "^5.0.2"},
   "type": "module"
 }
