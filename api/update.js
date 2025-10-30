@@ -3,13 +3,13 @@ const { GoogleAuth } = require('google-auth-library');
 
 module.exports = async function handler(req, res) {
   // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*'); // Allow requests from any origin (replace '*' with your frontend domain for tighter security)
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS'); // Allow specific HTTP methods
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // Allow specific headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-  // Handle preflight OPTIONS request
+  console.log('Attemping to start the API request')
   if (req.method === 'OPTIONS') {
-    return res.status(200).end(); // Respond successfully to preflight request
+    return res.status(200).end();
   }
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Solo POST' });
@@ -20,7 +20,6 @@ module.exports = async function handler(req, res) {
   try {
     const doc = new GoogleSpreadsheet(process.env.SHEET_ID);
 
-    // Create a GoogleAuth instance for service account authentication
     const auth = new GoogleAuth({
       credentials: {
         client_email: process.env.CLIENT_EMAIL,
@@ -29,16 +28,14 @@ module.exports = async function handler(req, res) {
       scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
 
-    // Use the GoogleAuth client to authenticate
     const authClient = await auth.getClient();
-    doc.useOAuth2Client(authClient);  // Use the OAuth2 client for auth
+    doc.useOAuth2Client(authClient);
 
     await doc.loadInfo();
-    const sheet = doc.sheetsByIndex[0];  // "main" sheet
+    const sheet = doc.sheetsByIndex[0];
 
-    // **Update ultra-fast**
     const range = sheet.getRange(rango);
-    const cells = range._cellCells || [];  // Reuse if exists
+    const cells = range._cellCells || [];
     await sheet.updateCells(cells.map((cell, i) => ({
       ...cell,
       value: valores.flat()[i] || ''
@@ -50,6 +47,7 @@ module.exports = async function handler(req, res) {
       updated: valores
     });
   } catch (error) {
+    console.error('Error:', error.message);
     res.status(500).json({ error: error.message });
   }
 };
