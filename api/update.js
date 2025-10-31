@@ -17,16 +17,21 @@ module.exports = async function handler(req, res) {
   const inicio = Date.now();
   const { rango, valores } = req.body;
 
+  // Input validation
+  if (!rango || !valores || !Array.isArray(valores)) {
+    return res.status(400).json({ error: 'Invalid input data' });
+  }
+
   try {
     const doc = new GoogleSpreadsheet(process.env.SHEET_ID);
 
     // Use the private key directly from the environment variable
-    const private_key = process.env.PRIVATE_KEY;  // Directly use the value from environment variable
+    const private_key = process.env.PRIVATE_KEY.replace(/\\n/g, '\n'); // Ensure newlines are correct
 
     const auth = new GoogleAuth({
       credentials: {
         client_email: process.env.CLIENT_EMAIL,
-        private_key: private_key.replace(/\\n/g, '\n')  // Ensure proper newline decoding
+        private_key,
       },
       scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
@@ -34,28 +39,38 @@ module.exports = async function handler(req, res) {
     const authClient = await auth.getClient();
     doc.useOAuth2Client(authClient);
 
-    await doc.loadInfo();  // Load the document information
-    const sheet = doc.sheetsByIndex[0];  // Access the first sheet
+    await doc.loadInfo(); // Load document info
+    const sheet = doc.sheetsByIndex[0]; // First sheet
 
-    // Get all rows from the sheet
-    const rows = await sheet.getRows();
+    const rows = await sheet.getRows(); // Get all rows
 
-    // Find the row and column index based on the range `rango` (e.g., 'D1')
-    const [column, row] = rango.match(/[A-Z]+|[0-9]+/g); // Extract column (e.g., 'D') and row (e.g., '1')
+    // Parse the range (e.g., 'D1')
+    const [colLetter, rowNumber] = rango.match(/[A-Z]+|[0-9]+/g);
+    const columnIndex = colLetter.charCodeAt(0) - 65; // Column A = 0, B = 1, C = 2, etc.
 
-    // Adjust the column index based on the column letter (A -> 0, B -> 1, C -> 2, ...)
-    const columnIndex = column.charCodeAt(0) - 65;  // Assuming column A starts at 0, B at 1, ...
+    // Make sure the row exists
+    const rowIndex = parseInt(rowNumber, 10) - 1;
+    if (rowIndex < 0 || rowIndex >= rows.length) {
+      return res.status(400).json({ error: 'Row index out of range' });
+    }
 
-    // Update the correct cell value
-    rows[row - 1][sheet.headerValues[columnIndex]] = valores[0][0];  // Set the value of the cell
+    const header = sheet.headerValues; // Get column headers
+    const columnHeader = header[columnIndex]; // Get column header name
 
-    // Save the row to the sheet
-    await rows[row - 1].save();
+    // Log for debugging
+    console.log('Header:', header);
+    console.log('Updating row:', rowIndex, 'Column:', columnHeader, 'Value:', valores[0][0]);
+
+    // Update the cell value
+    rows[rowIndex][columnHeader] = valores[0][0]; // Update the value based on header name
+
+    // Save the row
+    await rows[rowIndex].save();
 
     res.json({
       ok: true,
       ms: Date.now() - inicio,
-      updated: valores
+      updated: valores,
     });
   } catch (error) {
     console.error('Error:', error.message);
