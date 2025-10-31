@@ -77,7 +77,16 @@ async function updateRow(rows, sheet, object, res) {
       }
     }
     await row.save();  // Save the updated row
-    return res.status(200).json({ message: 'Row updated successfully.', updatedRow: row });
+
+    // Return only the fields we need, avoiding the circular structure
+    const updatedRow = {
+      id: row.id,
+      name: row.name,
+      phone: row.phone,
+      // Include other fields as needed
+    };
+
+    return res.status(200).json({ message: 'Row updated successfully.', updatedRow });
   } else {
     return res.status(404).json({ error: `Row with ID ${object.id} not found.` });
   }
@@ -90,7 +99,16 @@ async function createRow(sheet, object, res) {
   }
 
   const newRow = await sheet.addRow(object);  // Add the new row
-  return res.status(201).json({ message: 'New row created successfully.', newRow });
+
+  // Return only the fields we need, avoiding the circular structure
+  const createdRow = {
+    id: newRow.id,
+    name: newRow.name,
+    phone: newRow.phone,
+    // Include other fields as needed
+  };
+
+  return res.status(201).json({ message: 'New row created successfully.', createdRow });
 }
 
 // Function to delete a row
