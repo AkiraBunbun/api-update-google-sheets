@@ -43,6 +43,8 @@ module.exports = async function handler(req, res) {
     const sheet = doc.sheetsByIndex[0]; // First sheet
 
     const rows = await sheet.getRows(); // Get all rows
+    console.log('Loaded Rows:', rows);  // Log the rows to check if they are loaded
+    console.log('Header:', sheet.headerValues);  // Log the headers to check the column names
 
     // Parse the range (e.g., 'D1')
     const [colLetter, rowNumber] = rango.match(/[A-Z]+|[0-9]+/g);
@@ -51,6 +53,7 @@ module.exports = async function handler(req, res) {
     // Make sure the row exists
     const rowIndex = parseInt(rowNumber, 10) - 1;
     if (rowIndex < 0 || rowIndex >= rows.length) {
+      console.log(`Invalid row index: ${rowIndex}. Total rows: ${rows.length}`);
       return res.status(400).json({ error: 'Row index out of range' });
     }
 
@@ -58,14 +61,15 @@ module.exports = async function handler(req, res) {
     const columnHeader = header[columnIndex]; // Get column header name
 
     // Log for debugging
-    console.log('Header:', header);
-    console.log('Updating row:', rowIndex, 'Column:', columnHeader, 'Value:', valores[0][0]);
+    console.log('Column to Update:', columnHeader);
+    console.log('Updating row:', rowIndex, 'Value:', valores[0][0]);
 
     // Update the cell value
     rows[rowIndex][columnHeader] = valores[0][0]; // Update the value based on header name
 
     // Save the row
     await rows[rowIndex].save();
+    console.log('Row updated successfully:', rows[rowIndex]);
 
     res.json({
       ok: true,
